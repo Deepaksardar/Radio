@@ -3,24 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Internet Radio</title>
+    <title>Podcast Player</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
         }
-        audio {
-            margin-top: 20px;
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .podcast-section {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .episode {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.3s;
+        }
+
+        .episode:hover {
+            background-color: #f8f8f8;
+        }
+
+        .play-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .audio-player {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            padding: 15px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+
+        .now-playing {
+            background-color: #e3f2fd;
         }
     </style>
 </head>
 <body>
-    <h2>Live Internet Radio</h2>
-    <p>Click play to listen:</p>
-    <audio controls>
-        <source src="https://internetradio.gupshupradio.com:8080/?type=mp3" type="audio/mpeg">
-        Your browser does not support the audio element.
-    </audio>
+    <div class="container">
+        <h1>Podcast Player</h1>
+        
+        <div id="this-american-life" class="podcast-section">
+            <h2>This American Life</h2>
+            <div class="episodes"></div>
+        </div>
+
+        <div id="anchor-fm" class="podcast-section">
+            <h2>Anchor FM Podcast</h2>
+            <div class="episodes"></div>
+        </div>
+
+        <div class="audio-player">
+            <audio id="audio-player" controls></audio>
+        </div>
+    </div>
+
+    <script>
+        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
+        const PODCASTS = [
+            {
+                url: "https://www.thisamericanlife.org/podcast/rss.xml",
+                container: "#this-american-life .episodes"
+            },
+            {
+                url: "https://anchor.fm/s/f5347ab0/podcast/rss",
+                container: "#anchor-fm .episodes"
+            }
+        ];
+
+        async function loadPodcast(podcast) {
+            try {
+                const response = await fetch(CORS_PROXY + podcast.url);
+                const xml = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xml, "text/xml");
+                
+                const items = xmlDoc.getElementsByTagName("item");
+                let episodesHtml = "";
+
+                for (let item of items) {
+                    const title = item.getElementsByTagName("title")[0].textContent;
+                    const description = item.getElementsByTagName("description")[0].textContent;
+                    const pubDate = new Date(item.getElementsByTagName("pubDate")[0].textContent).toLocaleDateString();
+                    const audioUrl = item.getElementsByTagName("enclosure")[0].getAttribute("url");
+
+                    episodesHtml += `
+                        <div class="episode" data-audio="${audioUrl}">
+                            <button class="play-button">▶</button>
+                            <strong>${title}</strong><br>
+                            <small>${pubDate}</small>
+                            <p>${description}</p>
+                        </div>
+                    `;
+                }
+
+                document.querySelector(podcast.container).innerHTML = episodesHtml;
+            } catch (error) {
+                console.error("Error loading podcast:", error);
+            }
+        }
+
+        // Load all podcasts
+        PODCASTS.forEach(loadPodcast);
+
+        // Handle play button clicks
+        document.addEventListener("click", (e) => {
+            if (e.target.classList.contains("play-button")) {
+                const episode = e.target.closest(".episode");
+                const audioUrl = episode.dataset.audio;
+                const audioPlayer = document.getElementById("audio-player");
+                
+                // Remove previous now-playing class
+                document.querySelectorAll(".now-playing").forEach(el => {
+                    el.classList.remove("now-playing");
+                });
+                
+                // Set new audio source and play
+                episode.classList.add("now-playing");
+                audioPlayer.src = audioUrl;
+                audioPlayer.play();
+            }
+        });
+    </script>
 </body>
 </html>
