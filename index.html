@@ -3,147 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podcast Player</title>
+    <title>Hamare Nagpuri</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
+            background: linear-gradient(to bottom, #1e3a8a, #3b82f6);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial', sans-serif;
         }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
+        .player-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 100%;
         }
-
-        .podcast-section {
-            background-color: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .episode {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.3s;
-        }
-
-        .episode:hover {
-            background-color: #f8f8f8;
-        }
-
-        .play-button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-
         .audio-player {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background-color: white;
-            padding: 15px;
-            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+            width: 100%;
+            outline: none;
         }
-
         .now-playing {
-            background-color: #e3f2fd;
+            min-height: 4rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Podcast Player</h1>
-        
-        <div id="this-american-life" class="podcast-section">
-            <h2>This American Life</h2>
-            <div class="episodes"></div>
+    <div class="player-container">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">Hamare Nagpuri</h1>
+        <div class="now-playing text-center mb-4">
+            <p id="song-title" class="text-lg font-semibold text-gray-700">Loading...</p>
+            <p id="artist" class="text-gray-500">Waiting for metadata...</p>
         </div>
-
-        <div id="anchor-fm" class="podcast-section">
-            <h2>Anchor FM Podcast</h2>
-            <div class="episodes"></div>
+        <audio id="radio" class="audio-player mb-4" controls src="https://stream.zeno.fm/74mzdgk024zuv"></audio>
+        <div class="flex justify-center space-x-4">
+            <button id="play-pause" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Play</button>
+            <input type="range" id="volume" min="0" max="1" step="0.1" value="1" class="w-24">
         </div>
-
-        <div class="audio-player">
-            <audio id="audio-player" controls></audio>
-        </div>
+        <p id="error-message" class="text-red-500 text-center mt-2 hidden">Error loading metadata</p>
     </div>
 
     <script>
-        const CORS_PROXY = "https://cors-anywhere.herokuapp.com/";
-        const PODCASTS = [
-            {
-                url: "https://www.thisamericanlife.org/podcast/rss.xml",
-                container: "#this-american-life .episodes"
-            },
-            {
-                url: "https://anchor.fm/s/f5347ab0/podcast/rss",
-                container: "#anchor-fm .episodes"
-            }
-        ];
+        const audio = document.getElementById('radio');
+        const playPauseButton = document.getElementById('play-pause');
+        const volumeSlider = document.getElementById('volume');
+        const songTitle = document.getElementById('song-title');
+        const artist = document.getElementById('artist');
+        const errorMessage = document.getElementById('error-message');
 
-        async function loadPodcast(podcast) {
-            try {
-                const response = await fetch(CORS_PROXY + podcast.url);
-                const xml = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xml, "text/xml");
-                
-                const items = xmlDoc.getElementsByTagName("item");
-                let episodesHtml = "";
-
-                for (let item of items) {
-                    const title = item.getElementsByTagName("title")[0].textContent;
-                    const description = item.getElementsByTagName("description")[0].textContent;
-                    const pubDate = new Date(item.getElementsByTagName("pubDate")[0].textContent).toLocaleDateString();
-                    const audioUrl = item.getElementsByTagName("enclosure")[0].getAttribute("url");
-
-                    episodesHtml += `
-                        <div class="episode" data-audio="${audioUrl}">
-                            <button class="play-button">▶</button>
-                            <strong>${title}</strong><br>
-                            <small>${pubDate}</small>
-                            <p>${description}</p>
-                        </div>
-                    `;
-                }
-
-                document.querySelector(podcast.container).innerHTML = episodesHtml;
-            } catch (error) {
-                console.error("Error loading podcast:", error);
-            }
-        }
-
-        // Load all podcasts
-        PODCASTS.forEach(loadPodcast);
-
-        // Handle play button clicks
-        document.addEventListener("click", (e) => {
-            if (e.target.classList.contains("play-button")) {
-                const episode = e.target.closest(".episode");
-                const audioUrl = episode.dataset.audio;
-                const audioPlayer = document.getElementById("audio-player");
-                
-                // Remove previous now-playing class
-                document.querySelectorAll(".now-playing").forEach(el => {
-                    el.classList.remove("now-playing");
+        // Play/Pause functionality
+        playPauseButton.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play().catch(err => {
+                    console.error('Audio playback error:', err);
+                    errorMessage.textContent = 'Error playing stream';
+                    errorMessage.classList.remove('hidden');
                 });
-                
-                // Set new audio source and play
-                episode.classList.add("now-playing");
-                audioPlayer.src = audioUrl;
-                audioPlayer.play();
+                playPauseButton.textContent = 'Pause';
+            } else {
+                audio.pause();
+                playPauseButton.textContent = 'Play';
             }
+        });
+
+        // Volume control
+        volumeSlider.addEventListener('input', () => {
+            audio.volume = volumeSlider.value;
+        });
+
+        // Handle Server-Sent Events for metadata
+        const source = new EventSource('https://api.zeno.fm/mounts/metadata/subscribe/74mzdgk024zuv');
+
+        source.addEventListener('message', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Metadata received:', data); // Log for debugging
+                const title = data.streamTitle || 'Unknown Song';
+                songTitle.textContent = title;
+                document.title = title; // Update page title
+                artist.textContent = ''; // Artist not provided in this API response
+                errorMessage.classList.add('hidden');
+            } catch (error) {
+                console.error('Error parsing metadata:', error);
+                songTitle.textContent = 'Metadata Unavailable';
+                document.title = 'Hamare Nagpuri'; // Fallback title
+                artist.textContent = '';
+                errorMessage.textContent = 'Error parsing metadata';
+                errorMessage.classList.remove('hidden');
+            }
+        });
+
+        source.addEventListener('error', (error) => {
+            console.error('SSE error:', error);
+            songTitle.textContent = 'Metadata Unavailable';
+            document.title = 'Hamare Nagpuri'; // Fallback title
+            artist.textContent = '';
+            errorMessage.textContent = 'Error connecting to metadata server';
+            errorMessage.classList.remove('hidden');
+            source.close(); // Close connection on persistent error
+        });
+
+        // Check if stream is playable
+        audio.addEventListener('error', () => {
+            errorMessage.textContent = 'Stream unavailable';
+            errorMessage.classList.remove('hidden');
         });
     </script>
 </body>
