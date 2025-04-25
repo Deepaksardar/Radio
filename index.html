@@ -20,40 +20,95 @@
             border-radius: 1rem;
             padding: 2rem;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-            max-width: 400px;
             width: 100%;
+            max-width: 600px;
         }
         .audio-player {
             width: 100%;
             outline: none;
         }
+        .fm-logo {
+            max-width: 150px;
+            height: auto;
+        }
         .now-playing {
             min-height: 4rem;
+        }
+        .info-box {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+        }
+        .station-select {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.25rem;
+            padding: 0.5rem;
+            width: 100%;
+            max-width: 300px;
+            appearance: none;
+            background: white;
+        }
+        @media (max-width: 640px) {
+            .player-container {
+                flex-direction: column;
+            }
+            .player-container > div {
+                width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="player-container">
-        <h1 class="text-2xl font-bold text-center text-gray-800 mb-4">Hamare Nagpuri</h1>
-        <div class="now-playing text-center mb-4">
-            <p id="song-title" class="text-lg font-semibold text-gray-700">Loading...</p>
-            <p id="artist" class="text-gray-500">Waiting for metadata...</p>
+    <div style="position: fixed; top: 0; left: 0; width: 100%; background-color: #fff; text-align: center; padding: 10px 0; z-index: 1000;">
+        <h1><b>East India Radio (EIR)</b></h1>
+    </div>
+    <div class="container flex flex-col max-w-5xl mx-auto px-4 mt-16">
+        <div class="player-container flex flex-row sm:flex-col">
+            <div class="w-1/4 sm:w-full flex flex-col items-center">
+                <img id="fm-logo" src="https://i.pinimg.com/1200x/0e/68/5d/0e685d0da0d7e915e20af08ea3aba6c9.jpg" alt="Hamare Nagpuri Logo" class="fm-logo mb-4">
+                <p class="text-lg text-gray-600 mb-2">Choose Your FM</p>
+                <!-- Add new channels here by appending <option> elements to the <select> below -->
+                <!-- Format: <option data-stream="streamUrl|mount|type|logoUrl|stationName|location|language" value="stationName">Station Name</option> -->
+                <!-- Example for Zeno.fm: <option data-stream="https://stream.zeno.fm/<mount>|<mount>|zeno|https://example.com/logo.png|New Station|City, Country|Language" value="New Station">New Station</option> -->
+                <!-- Example for non-Zeno.fm: <option data-stream="https://example.com/stream.mp3|unique_id|gupshup|https://example.com/logo.png|New Station|City, Country|Language" value="New Station">New Station</option> -->
+                <select id="station-select" class="station-select text-2xl font-bold text-center text-gray-800 mb-4">
+                    <option data-stream="https://stream.zeno.fm/74mzdgk024zuv|74mzdgk024zuv|zeno|https://i.pinimg.com/1200x/0e/68/5d/0e685d0da0d7e915e20af08ea3aba6c9.jpg|Hamare Nagpuri|Jharkhand, India|Nagpuri" value="Hamare Nagpuri" selected>Hamare Nagpuri</option>
+                    <option data-stream="https://stream.zeno.fm/en6hzb027zhvv|en6hzb027zhvv|zeno|https://i.pinimg.com/1200x/a2/77/58/a2775814bcd4488a321433e9619db1be.jpg|Srijan Radio|Odisha, India|Odia" value="Srijan Radio">Srijan Radio</option>
+                    <option data-stream="https://internetradio.gupshupradio.com:8080/?type=mp3|gupshup|gupshup|https://gupshupradio.com/wp-content/uploads/2021/11/gupshuplogo.png|Gupshup Radio|Punjab, India|Punjabi" value="Gupshup Radio">Gupshup Radio</option>
+                </select>
+            </div>
+            <div class="w-2/3 sm:w-full flex flex-col">
+                <div id="info-box" class="info-box text-center mb-4">
+                    <p><strong>Location:</strong> <span id="station-location">Jharkhand, India</span></p>
+                    <p><strong>Language:</strong> <span id="station-language">Nagpuri</span></p>
+                </div>
+                <div class="now-playing text-center mb-4">
+                    <p id="song-title" class="text-lg font-semibold text-gray-700">Loading...</p>
+                    <p id="artist" class="text-gray-500">Waiting for metadata...</p>
+                </div>
+                <audio id="radio" class="audio-player mb-4" controls src="https://stream.zeno.fm/74mzdgk024zuv"></audio>
+                <div class="flex justify-center space-x-4">
+                    <button id="play-pause" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Play</button>
+                    <input type="range" id="volume" min="0" max="1" step="0.1" value="1" class="w-24">
+                </div>
+                <p id="error-message" class="text-red-500 text-center mt-2 hidden">Error loading metadata</p>
+            </div>
         </div>
-        <audio id="radio" class="audio-player mb-4" controls src="https://stream.zeno.fm/74mzdgk024zuv"></audio>
-        <div class="flex justify-center space-x-4">
-            <button id="play-pause" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Play</button>
-            <input type="range" id="volume" min="0" max="1" step="0.1" value="1" class="w-24">
-        </div>
-        <p id="error-message" class="text-red-500 text-center mt-2 hidden">Error loading metadata</p>
     </div>
 
     <script>
         const audio = document.getElementById('radio');
         const playPauseButton = document.getElementById('play-pause');
         const volumeSlider = document.getElementById('volume');
+        const stationSelect = document.getElementById('station-select');
         const songTitle = document.getElementById('song-title');
         const artist = document.getElementById('artist');
+        const fmLogo = document.getElementById('fm-logo');
         const errorMessage = document.getElementById('error-message');
+        const stationLocation = document.getElementById('station-location');
+        const stationLanguage = document.getElementById('station-language');
+        let currentSource = null;
 
         // Play/Pause functionality
         playPauseButton.addEventListener('click', () => {
@@ -75,37 +130,80 @@
             audio.volume = volumeSlider.value;
         });
 
-        // Handle Server-Sent Events for metadata
-        const source = new EventSource('https://api.zeno.fm/mounts/metadata/subscribe/74mzdgk024zuv');
+        // Station switching
+        // No JavaScript changes needed to add new channels; just add <option> elements to the <select> in HTML
+        stationSelect.addEventListener('change', () => {
+            const selectedOption = stationSelect.options[stationSelect.selectedIndex];
+            const [streamUrl, mount, type, logoUrl, stationName, location, language] = selectedOption.dataset.stream.split('|');
+            
+            // Update audio and metadata
+            audio.src = streamUrl;
+            audio.load();
+            songTitle.textContent = 'Loading...';
+            artist.textContent = 'Waiting for metadata...';
+            document.title = stationName;
+            fmLogo.src = logoUrl;
+            fmLogo.alt = `${stationName} Logo`;
+            stationLocation.textContent = location || 'Unknown';
+            stationLanguage.textContent = language || 'Unknown';
+            errorMessage.classList.add('hidden');
 
-        source.addEventListener('message', (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('Metadata received:', data); // Log for debugging
-                const title = data.streamTitle || 'Unknown Song';
-                songTitle.textContent = title;
-                document.title = title; // Update page title
-                artist.textContent = ''; // Artist not provided in this API response
-                errorMessage.classList.add('hidden');
-            } catch (error) {
-                console.error('Error parsing metadata:', error);
-                songTitle.textContent = 'Metadata Unavailable';
-                document.title = 'Hamare Nagpuri'; // Fallback title
-                artist.textContent = '';
-                errorMessage.textContent = 'Error parsing metadata';
-                errorMessage.classList.remove('hidden');
+            // Close existing SSE connection
+            if (currentSource) {
+                currentSource.close();
+                currentSource = null;
+            }
+
+            // Handle metadata
+            if (type === 'zeno') {
+                connectZenoMetadata(mount, stationName);
+            } else if (type === 'gupshup') {
+                songTitle.textContent = 'N/A';
+                artist.textContent = 'N/A';
+                document.title = stationName;
+            }
+
+            // Auto-play
+            if (!audio.paused) {
+                audio.play().catch(err => console.error('Auto-play error:', err));
             }
         });
 
-        source.addEventListener('error', (error) => {
-            console.error('SSE error:', error);
-            songTitle.textContent = 'Metadata Unavailable';
-            document.title = 'Hamare Nagpuri'; // Fallback title
-            artist.textContent = '';
-            errorMessage.textContent = 'Error connecting to metadata server';
-            errorMessage.classList.remove('hidden');
-            source.close(); // Close connection on persistent error
-        });
+        // Zeno.fm metadata (SSE)
+        function connectZenoMetadata(mount, stationName) {
+            const source = new EventSource(`https://api.zeno.fm/mounts/metadata/subscribe/${mount}`);
+            currentSource = source;
+
+            source.addEventListener('message', (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    const title = data.streamTitle || 'Unknown Song';
+                    songTitle.textContent = title;
+                    artist.textContent = ''; // Artist not provided
+                    document.title = title;
+                    errorMessage.classList.add('hidden');
+                } catch (error) {
+                    songTitle.textContent = 'Metadata Unavailable';
+                    artist.textContent = '';
+                    document.title = stationName;
+                    errorMessage.textContent = 'Error parsing metadata';
+                    errorMessage.classList.remove('hidden');
+                }
+            });
+
+            source.addEventListener('error', (error) => {
+                songTitle.textContent = 'Metadata Unavailable';
+                artist.textContent = '';
+                document.title = stationName;
+                errorMessage.textContent = 'Error connecting to metadata server';
+                errorMessage.classList.remove('hidden');
+                source.close();
+                currentSource = null;
+            });
+        }
+
+        // Initial setup
+        connectZenoMetadata('74mzdgk024zuv', 'Hamare Nagpuri');
 
         // Check if stream is playable
         audio.addEventListener('error', () => {
